@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1012 638" preserveAspectRatio="xMidYMid slice">
+  <!-- Placeholder artwork for the premier tier card. Replace with final artwork (card-premier.png / .jpg / .svg, 1012×638 px). -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1838"/>
+      <stop offset="1" stop-color="#23439a"/>
+    </linearGradient>
+    <pattern id="facets" width="120" height="120" patternUnits="userSpaceOnUse" patternTransform="rotate(30)">
+      <path d="M0 60 L60 0 L120 60 L60 120 Z" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="2"/>
+    </pattern>
+  </defs>
+  <rect width="1012" height="638" fill="url(#g)"/>
+  <rect width="1012" height="638" fill="url(#facets)"/>
+  <g transform="translate(700 330)" fill="none" stroke="#9db7f0" stroke-opacity="0.35" stroke-width="3">
+    <rect x="-210" y="-180" width="420" height="360" rx="90"/>
+    <rect x="-110" y="-95" width="220" height="190" rx="24"/>
+    <path d="M-210 -90 L-110 -95 M210 -90 L110 -95 M-210 90 L-110 95 M210 90 L110 95 M-110 -180 L-110 -95 M110 -180 L110 -95 M-110 180 L-110 95 M110 180 L110 95 M-110 -95 L0 0 L110 -95 M-110 95 L0 0 L110 95"/>
+  </g>
+  <rect x="0" y="600" width="1012" height="38" fill="#9db7f0" fill-opacity="0.5"/>
+</svg>

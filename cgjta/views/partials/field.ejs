@@ -1,0 +1,19 @@
+<% const fid = 'f_' + name; const err = errors && errors[name]; %>
+<div class="field <%= locals.cls || '' %> <%= err ? 'has-error' : '' %>">
+  <label for="<%= fid %>"><%= label %><% if (locals.required) { %> <span class="req" aria-hidden="true">*</span><% } %></label>
+  <% if (locals.type === 'textarea') { %>
+    <textarea id="<%= fid %>" name="<%= name %>" maxlength="2000"><%= value === null || value === undefined ? '' : value %></textarea>
+  <% } else { %>
+    <input type="<%= locals.type || 'text' %>" id="<%= fid %>" name="<%= name %>"
+      value="<%= value === null || value === undefined ? '' : value %>"
+      <%= locals.required ? 'required' : '' %>
+      <% if (locals.placeholder) { %>placeholder="<%= placeholder %>"<% } %>
+      <% if (locals.autocomplete) { %>autocomplete="<%= autocomplete %>"<% } %>
+      <% if (locals.list) { %>list="<%= list %>"<% } %>
+      <% if (locals.max) { %>max="<%= max %>"<% } %>
+      <% if (locals.inputmode) { %>inputmode="<%= inputmode %>"<% } %>
+      <% if (err) { %>aria-invalid="true" aria-describedby="<%= fid %>_err"<% } %>>
+  <% } %>
+  <% if (locals.help) { %><span class="help"><%= help %></span><% } %>
+  <% if (err) { %><span class="error" id="<%= fid %>_err"><%= err %></span><% } %>
+</div>

@@ -1,0 +1,173 @@
+<%- include('partials/top') %>
+<div class="page-head">
+  <div>
+    <h1>Dashboard</h1>
+    <div class="sub"><%= h.fmtDate(h.today()) %></div>
+  </div>
+  <div class="actions">
+    <a class="btn" href="/members/new">New application</a>
+    <a class="btn btn-primary" href="/payments/new">Record payment</a>
+  </div>
+</div>
+
+<section class="kpis" aria-label="Key figures">
+  <div class="card kpi">
+    <div class="label">Collected in <%= year %></div>
+    <div class="value"><span class="cur">LKR</span><%= h.money(totals.year.s, { symbol: false, decimals: false }) %></div>
+    <div class="foot"><%= totals.year.n %> payment<%= totals.year.n === 1 ? '' : 's' %></div>
+  </div>
+  <div class="card kpi">
+    <div class="label">Collected this month</div>
+    <div class="value"><span class="cur">LKR</span><%= h.money(totals.month.s, { symbol: false, decimals: false }) %></div>
+    <div class="foot"><%= totals.month.n %> payment<%= totals.month.n === 1 ? '' : 's' %></div>
+  </div>
+  <div class="card kpi">
+    <div class="label">Members in good standing</div>
+    <a class="value" href="/members?standing=active"><%= standing.active + standing.due_soon %></a>
+    <div class="foot"><%= standing.pending %> application<%= standing.pending === 1 ? '' : 's' %> pending</div>
+  </div>
+  <div class="card kpi">
+    <div class="label">Renewal due / expired</div>
+    <div class="value"><a href="/members?standing=due_soon"><%= standing.due_soon %></a> <span class="muted">/</span> <a href="/members?standing=expired"><%= standing.expired %></a></div>
+    <div class="foot">Due within <%= settings.renewal_window_days %> days</div>
+  </div>
+</section>
+
+<section class="tiers-row" aria-label="Members by tier">
+  <% for (const t of tiers) { %>
+    <a class="card tier-tile" style="--tier-color: <%= t.color %>; color: inherit; text-decoration: none" href="/members?tier=<%= t.code %>">
+      <span class="tier" style="--tier-color: <%= t.color %>"><%= t.name %></span>
+      <div class="count"><%= t.active %></div>
+      <div class="foot">in good standing · <%= t.approved %> approved · <%= t.total %> on file</div>
+    </a>
+  <% } %>
+</section>
+
+<div class="split">
+  <div class="stack">
+    <%
+      const max = Math.max(0, ...monthly.map((m) => m.total));
+      const scale = h.niceScale(max, 4);
+      const peak = max > 0 ? monthly.findIndex((m) => m.total === max) : -1;
+      const thisMonth = h.today().slice(0, 7);
+    %>
+    <section class="card">
+      <div class="card-head">
+        <h2>Collections by month, <%= year %></h2>
+        <a class="hint" href="/payments?from=<%= year %>-01-01&to=<%= year %>-12-31">All <%= year %> payments →</a>
+      </div>
+      <div class="chart">
+        <div class="chart-plot">
+          <div class="chart-grid" aria-hidden="true">
+            <% for (let v = 0; v <= scale.top; v += scale.step) { %>
+              <div class="gl" style="bottom: <%= (v / scale.top) * 100 %>%"><span><%= h.compactMoney(v) %></span></div>
+            <% } %>
+          </div>
+          <div class="chart-bars">
+            <% monthly.forEach((m, i) => { const pct = (m.total / scale.top) * 100; %>
+              <div class="chart-col" tabindex="0" aria-label="<%= h.MONTHS[i] %> <%= year %>: <%= h.money(m.total) %> from <%= m.count %> payments">
+                <div class="bar" style="height: <%= pct %>%"></div>
+                <% if (i === peak) { %><span class="peak" style="bottom: calc(<%= pct %>% + 4px)"><%= h.compactMoney(m.total) %></span><% } %>
+                <span class="tip" aria-hidden="true"><strong><%= h.money(m.total) %></strong><%= h.MONTHS[i] %> <%= year %> · <%= m.count %> payment<%= m.count === 1 ? '' : 's' %></span>
+              </div>
+            <% }) %>
+          </div>
+        </div>
+        <div class="chart-x" aria-hidden="true">
+          <% monthly.forEach((m, i) => { %><span class="<%= m.month === thisMonth ? 'now' : '' %>"><%= h.MONTHS[i] %></span><% }) %>
+        </div>
+      </div>
+      <details class="disclose">
+        <summary>View as table</summary>
+        <div class="table-wrap">
+          <table class="data">
+            <thead><tr><th>Month</th><th class="num">Payments</th><th class="num">Collected</th></tr></thead>
+            <tbody>
+              <% monthly.forEach((m, i) => { %>
+                <tr><td><%= h.MONTHS[i] %> <%= year %></td><td class="num"><%= m.count %></td><td class="num"><%= h.money(m.total) %></td></tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>Latest payments</h2><a class="hint" href="/payments">All payments →</a></div>
+      <% if (recentPayments.length === 0) { %>
+        <div class="empty">No payments yet. <a href="/payments/new">Record the first one</a>.</div>
+      <% } else { %>
+        <div class="table-wrap">
+          <table class="data">
+            <thead><tr><th>Receipt</th><th>Member</th><th>Type</th><th>Date</th><th class="num">Amount</th></tr></thead>
+            <tbody>
+              <% for (const p of recentPayments) { %>
+                <tr>
+                  <td class="mono nowrap"><a href="/payments/<%= p.id %>"><%= p.receipt_no %></a></td>
+                  <td><a href="/members/<%= p.member_id %>"><%= p.member_name %></a></td>
+                  <td><%= (config.PAYMENT_TYPES.find((t) => t.code === p.type) || {}).label %></td>
+                  <td class="nowrap"><%= h.fmtDate(p.paid_on) %></td>
+                  <td class="num"><%= h.money(p.amount) %></td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </section>
+  </div>
+
+  <div class="stack">
+    <section class="card">
+      <div class="card-head"><h2>Pending applications</h2><a class="hint" href="/members?standing=pending">View all →</a></div>
+      <% if (pending.length === 0) { %>
+        <div class="empty">Nothing waiting for approval.</div>
+      <% } else { %>
+        <ul class="timeline">
+          <% for (const m of pending) { %>
+            <li>
+              <a href="/members/<%= m.id %>"><strong><%= m.full_name %></strong></a>
+              <span class="tier" style="--tier-color: <%= m.tier_color %>; margin-left: 6px"><%= m.tier_name %></span>
+              <div class="when">Applied <%= h.fmtDate(m.application_date) %><%= m.business_name ? ' · ' + m.business_name : '' %></div>
+            </li>
+          <% } %>
+        </ul>
+      <% } %>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>Renewals</h2><a class="hint" href="/members?standing=expired">Expired →</a></div>
+      <% if (renewals.length === 0) { %>
+        <div class="empty">Everyone is paid up.</div>
+      <% } else { %>
+        <ul class="timeline">
+          <% for (const m of renewals) { const s = config.STANDINGS[m.standing]; %>
+            <li>
+              <a href="/members/<%= m.id %>"><strong><%= m.full_name %></strong></a>
+              <span class="badge tone-<%= s.tone %>" style="margin-left: 6px"><%= s.label %></span>
+              <div class="when"><%= m.cgjta_no %> · <%= m.valid_until ? (m.standing === 'expired' ? 'Expired ' : 'Expires ') + h.fmtDate(m.valid_until) : 'No subscription paid yet' %></div>
+            </li>
+          <% } %>
+        </ul>
+      <% } %>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>Recent activity</h2></div>
+      <% if (activity.length === 0) { %>
+        <div class="empty">No activity yet.</div>
+      <% } else { %>
+        <ul class="timeline">
+          <% for (const a of activity) { %>
+            <li>
+              <%= h.activityLabel(a.action) %><% if (a.mid) { %> — <a href="/members/<%= a.mid %>"><%= a.first_name %> <%= a.last_name %></a><% } %>
+              <% if (a.details) { %><div class="small muted"><%= a.details %></div><% } %>
+              <div class="when"><%= h.fmtDateTime(a.created_at) %><%= a.user_name ? ' · ' + a.user_name : '' %></div>
+            </li>
+          <% } %>
+        </ul>
+      <% } %>
+    </section>
+  </div>
+</div>
+<%- include('partials/bottom') %>

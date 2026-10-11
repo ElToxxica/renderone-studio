@@ -1,0 +1,43 @@
+<%# Membership card, front and back. Expects: member (m), photoUrl. %>
+<%
+  const front = artwork('card-' + m.tier.toLowerCase());
+  const back = artwork('card-back') || front;
+  const logo = artwork('logo');
+%>
+<div class="cards">
+  <div class="mcard" style="--tier-color: <%= m.tier_color %>" role="img" aria-label="Membership card front for <%= m.name_on_card %>, <%= m.tier_name %>, number <%= m.cgjta_no %>">
+    <% if (front) { %><img class="art" src="<%= front %>" alt=""><% } %>
+    <div class="layer">
+      <div class="top">
+        <div class="org">
+          <% if (logo) { %><img src="<%= logo %>" alt=""><% } %>
+          <div><strong><%= settings.org_short %></strong><span><%= settings.org_name %></span></div>
+        </div>
+        <span class="tier-name"><%= m.tier_name %></span>
+      </div>
+      <div class="body">
+        <div class="photo"><% if (m.photo_file) { %><img src="<%= photoUrl %>" alt=""><% } else { %><%= m.initials %><% } %></div>
+        <div class="who">
+          <div class="nm"><%= m.name_on_card %></div>
+          <div class="biz"><%= m.business_name || ' ' %></div>
+          <div class="row">
+            <div><div class="k">Member No</div><div class="v"><%= m.cgjta_no || '—' %></div></div>
+            <div><div class="k">Valid until</div><div class="v"><%= m.valid_until ? h.fmtDate(m.valid_until).toUpperCase() : '—' %></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mcard back" style="--tier-color: <%= m.tier_color %>" role="img" aria-label="Membership card back">
+    <% if (back) { %><img class="art" src="<%= back %>" alt=""><% } %>
+    <div class="layer">
+      <div class="org">
+        <% if (logo) { %><img src="<%= logo %>" alt=""><% } %>
+        <div><strong><%= settings.org_short %></strong><span>Pioneering the gem trade of Sri Lanka</span></div>
+      </div>
+      <p class="terms">This card is the property of the <%= settings.org_name %> and must be returned on request. The holder agrees to comply with all CGJTA rules, regulations and policies. Promotions offered to card holders are at CGJTA’s sole discretion.</p>
+      <div class="sig"><div>Member signature</div><div>Authorised signatory</div></div>
+    </div>
+  </div>
+</div>

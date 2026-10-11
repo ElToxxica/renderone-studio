@@ -1,0 +1,23 @@
+<%- include('../partials/head') %>
+<body>
+<div class="auth-page">
+  <form class="card auth-card" method="post" action="/portal/login">
+    <div class="brand"><%- include('../partials/brand') %></div>
+    <h1>Member sign in</h1>
+    <p class="muted small">Use your CGJTA membership number as your user ID.</p>
+    <% if (error) { %><div class="flash bad" role="alert"><%= error %></div><% } %>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="field">
+      <label for="cgjta_no">Membership number</label>
+      <input type="text" id="cgjta_no" name="cgjta_no" value="<%= cgjtaNo %>" placeholder="<%= settings.member_no_prefix %>0001" autocomplete="username" autocapitalize="characters" required autofocus>
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" autocomplete="current-password" required>
+    </div>
+    <button class="btn btn-primary" type="submit">Sign in</button>
+    <p class="auth-switch">No password yet? Ask the CGJTA office to create your login. · <a href="/login">Staff</a></p>
+  </form>
+</div>
+</body>
+</html>

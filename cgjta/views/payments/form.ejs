@@ -1,0 +1,103 @@
+<%- include('../partials/top') %>
+<% const v = values; const f = (name, label, opts = {}) => include('../partials/field', { name, label, value: v[name], errors, ...opts }); %>
+<div class="page-head">
+  <div>
+    <div class="crumbs"><a href="/payments">Payments</a> / Record payment</div>
+    <h1>Record payment</h1>
+  </div>
+</div>
+
+<% if (!member) { %>
+  <section class="card" style="max-width: 760px">
+    <div class="card-head"><h2>1. Find the member</h2></div>
+    <form class="filters" method="get" action="/payments/new" style="border-bottom:0">
+      <div class="field grow">
+        <label for="q">Name, CGJTA No, NIC or phone</label>
+        <input type="search" id="q" name="q" value="<%= search %>" autofocus>
+      </div>
+      <button class="btn btn-primary" type="submit">Search</button>
+    </form>
+    <% if (errors.member_id) { %><div class="card-pad" style="padding-top:0"><div class="flash bad"><%= errors.member_id %></div></div><% } %>
+    <% if (search) { %>
+      <% if (matches.length === 0) { %>
+        <div class="empty">No members match “<%= search %>”.</div>
+      <% } else { %>
+        <div class="table-wrap">
+          <table class="data">
+            <tbody>
+              <% for (const m of matches) { const s = config.STANDINGS[m.standing]; %>
+                <tr>
+                  <td><strong><%= m.full_name %></strong><br><span class="small muted"><%= m.business_name || '' %></span></td>
+                  <td class="mono"><%= m.cgjta_no || '—' %></td>
+                  <td><span class="tier" style="--tier-color: <%= m.tier_color %>"><%= m.tier_name %></span></td>
+                  <td><span class="badge tone-<%= s.tone %>"><%= s.label %></span></td>
+                  <td class="num"><a class="btn btn-sm" href="/payments/new?member=<%= m.id %>">Select</a></td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    <% } %>
+  </section>
+<% } else { const s = config.STANDINGS[member.standing]; %>
+  <form class="card" method="post" action="/payments" style="max-width: 760px" data-payment-form data-fees="<%= JSON.stringify(Object.fromEntries(Object.entries(fees).map(([k, c]) => [k, c === null ? null : h.centsToInput(c)]))) %>">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <input type="hidden" name="member_id" value="<%= member.id %>">
+    <section class="form-section">
+      <div class="who-cell" style="margin-bottom: 12px">
+        <span class="avatar"><% if (member.photo_file) { %><img src="/members/<%= member.id %>/photo" alt=""><% } else { %><%= member.initials %><% } %></span>
+        <span>
+          <a class="name" href="/members/<%= member.id %>"><%= member.full_name %></a>
+          <span class="mono small"><%= member.cgjta_no || '' %></span><br>
+          <span class="tier" style="--tier-color: <%= member.tier_color %>"><%= member.tier_name %></span>
+          <span class="badge tone-<%= s.tone %>"><%= s.label %></span>
+          <span class="small muted">· valid until <%= h.fmtDate(member.valid_until) %></span>
+        </span>
+        <a class="small" href="/payments/new" style="margin-left:auto">Change member</a>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <div class="form-grid">
+        <div class="field col-6 <%= errors.type ? 'has-error' : '' %>">
+          <label for="f_type">Payment type <span class="req" aria-hidden="true">*</span></label>
+          <select id="f_type" name="type" data-type-select>
+            <% for (const t of config.PAYMENT_TYPES) { %><option value="<%= t.code %>" <%= v.type === t.code ? 'selected' : '' %>><%= t.label %></option><% } %>
+          </select>
+          <% if (errors.type) { %><span class="error"><%= errors.type %></span><% } %>
+        </div>
+        <%- f('amount', 'Amount (LKR)', { cls: 'col-6', required: true, inputmode: 'decimal', placeholder: '0.00' }) %>
+        <div class="field col-6 <%= errors.method ? 'has-error' : '' %>">
+          <label for="f_method">Method <span class="req" aria-hidden="true">*</span></label>
+          <select id="f_method" name="method">
+            <% for (const t of config.PAYMENT_METHODS) { %><option value="<%= t.code %>" <%= v.method === t.code ? 'selected' : '' %>><%= t.label %></option><% } %>
+          </select>
+          <% if (errors.method) { %><span class="error"><%= errors.method %></span><% } %>
+        </div>
+        <%- f('reference', 'Reference', { cls: 'col-6', help: 'Cheque No, bank reference or transaction ID' }) %>
+        <%- f('paid_on', 'Date paid', { cls: 'col-6', type: 'date', required: true, max: h.today() }) %>
+        <%- f('receipt_no', 'Receipt No', { cls: 'col-6', help: 'Leave blank to number automatically. Fill in to match a paper receipt book.' }) %>
+      </div>
+    </section>
+
+    <section class="form-section" data-for-type="subscription">
+      <h2>Subscription period</h2>
+      <p class="section-hint">Extends the membership. Defaults to 12 months from the current expiry (or from the payment date if already expired).</p>
+      <div class="form-grid">
+        <%- f('period_from', 'From', { cls: 'col-6', type: 'date' }) %>
+        <%- f('period_to', 'To', { cls: 'col-6', type: 'date' }) %>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <div class="form-grid"><%- f('notes', 'Notes', { cls: 'col-12', type: 'textarea' }) %></div>
+    </section>
+
+    <div class="form-actions">
+      <a class="btn" href="/members/<%= member.id %>">Cancel</a>
+      <button class="btn btn-primary" type="submit">Save payment</button>
+    </div>
+  </form>
+<% } %>
+<%- include('../partials/bottom') %>

@@ -1,0 +1,20 @@
+<%- include('../partials/head') %>
+<body>
+<header class="portal-top">
+  <div class="inner">
+    <a class="brand" href="/portal" style="padding:0"><%- include('../partials/brand') %></a>
+    <% if (currentMember) { %>
+      <nav class="links" aria-label="Member">
+        <a href="/portal">My membership</a>
+        <a href="/portal/card">Card</a>
+        <a href="/portal/password">Password</a>
+        <form method="post" action="/portal/logout" class="inline-form">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="linklike" type="submit">Sign out</button>
+        </form>
+      </nav>
+    <% } %>
+  </div>
+</header>
+<main class="portal-main" id="main">
+  <%- include('../partials/flash') %>

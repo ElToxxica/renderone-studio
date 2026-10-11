@@ -1,0 +1,12 @@
+<%- include('partials/head') %>
+<body>
+<div class="auth-page">
+  <div class="card auth-card">
+    <a class="brand" href="/"><%- include('partials/brand') %></a>
+    <h1><%= title %></h1>
+    <p class="muted"><%= message %></p>
+    <a class="btn" href="<%= currentMember ? '/portal' : '/' %>">Go back home</a>
+  </div>
+</div>
+</body>
+</html>
