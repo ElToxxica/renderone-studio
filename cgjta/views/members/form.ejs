@@ -1,0 +1,128 @@
+<%- include('../partials/top') %>
+<% const isEdit = Boolean(member.id); const m = member; const f = (name, label, opts = {}) => include('../partials/field', { name, label, value: m[name], errors, ...opts }); %>
+<div class="page-head">
+  <div>
+    <div class="crumbs"><a href="/members">Members</a><% if (isEdit) { %> / <a href="/members/<%= m.id %>"><%= h.fullName(m) %></a><% } %></div>
+    <h1><%= isEdit ? 'Edit member' : 'New membership application' %></h1>
+    <div class="sub">Mirrors the CGJTA membership application form. Fields marked <span class="req" style="color:var(--bad)">*</span> are required.</div>
+  </div>
+</div>
+
+<% if (Object.keys(errors).length) { %>
+  <div class="flash bad" role="alert">Please fix the highlighted fields below.</div>
+<% } %>
+
+<form class="card" method="post" action="<%= action %>" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+  <section class="form-section">
+    <h2>Membership</h2>
+    <p class="section-hint">Tier and numbering (office use).</p>
+    <div class="label" style="font-size:13px;font-weight:600;color:var(--ink-2);margin-bottom:6px">Tier <span class="req" style="color:var(--bad)">*</span></div>
+    <div class="tier-pick" role="radiogroup" aria-label="Tier">
+      <% for (const t of tiers) { %>
+        <label class="choice">
+          <input type="radio" name="tier" value="<%= t.code %>" <%= m.tier === t.code ? 'checked' : '' %> required>
+          <span>
+            <strong><span class="tier" style="--tier-color: <%= t.color %>"><%= t.name %></span></strong>
+            <span>Annual <%= h.money(t.annual_fee) %> · Admission <%= h.money(t.admission_fee) %></span>
+          </span>
+        </label>
+      <% } %>
+    </div>
+    <% if (errors.tier) { %><p class="error small" style="color:var(--bad)"><%= errors.tier %></p><% } %>
+    <div class="form-grid">
+      <%- f('cgjta_no', 'CGJTA No (user ID)', { cls: 'col-4', placeholder: settings.member_no_prefix + '0001', help: isEdit && m.cgjta_no ? 'Changing this changes the member’s login ID.' : 'Leave blank to issue the next number on approval. Fill in only for existing members.' }) %>
+      <%- f('application_date', 'Application date', { cls: 'col-4', type: 'date', required: true, max: h.today() }) %>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <h2>Personal information</h2>
+    <p class="section-hint">Applicant must be <%= config.MIN_AGE %> or older on the application date.</p>
+    <div class="form-grid">
+      <%- f('first_name', 'First name', { cls: 'col-6', required: true, autocomplete: 'given-name' }) %>
+      <%- f('last_name', 'Last name', { cls: 'col-6', required: true, autocomplete: 'family-name' }) %>
+      <%- f('name_on_card', 'Name on card', { cls: 'col-6', help: 'Printed on the membership card. Defaults to the full name.' }) %>
+      <%- f('nic_pp_no', 'NIC / Passport No', { cls: 'col-6', required: true }) %>
+      <div class="field col-6">
+        <span class="label">Gender</span>
+        <div class="radio-row">
+          <label><input type="radio" name="gender" value="male" <%= m.gender === 'male' ? 'checked' : '' %>> Male</label>
+          <label><input type="radio" name="gender" value="female" <%= m.gender === 'female' ? 'checked' : '' %>> Female</label>
+        </div>
+      </div>
+      <%- f('dob', 'Date of birth', { cls: 'col-6', type: 'date', required: true, autocomplete: 'bday', max: h.today() }) %>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <h2>Business</h2>
+    <div class="form-grid">
+      <%- f('business_name', 'Business name', { cls: 'col-12', autocomplete: 'organization' }) %>
+      <%- f('business_reg_no', 'Business registration No', { cls: 'col-6' }) %>
+      <%- f('ngja_license_no', 'NGJA licence No', { cls: 'col-6' }) %>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <h2>Contact</h2>
+    <div class="form-grid">
+      <%- f('address_line1', 'Mailing address', { cls: 'col-12', autocomplete: 'address-line1' }) %>
+      <%- f('address_line2', 'Address line 2', { cls: 'col-12', autocomplete: 'address-line2' }) %>
+      <%- f('city', 'City', { cls: 'col-4', autocomplete: 'address-level2' }) %>
+      <%- f('postal_code', 'Postal code', { cls: 'col-4', autocomplete: 'postal-code' }) %>
+      <%- f('country', 'Country', { cls: 'col-4', autocomplete: 'country-name' }) %>
+      <%- f('mobile', 'Mobile No', { cls: 'col-6', type: 'tel', required: true, autocomplete: 'tel', placeholder: '+94 77 123 4567' }) %>
+      <%- f('email', 'E-mail address', { cls: 'col-6', type: 'email', autocomplete: 'email' }) %>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <h2>Primary business activity <span class="req" style="color:var(--bad)">*</span></h2>
+    <p class="section-hint">Select all that apply.</p>
+    <div class="choice-grid">
+      <% for (const a of config.ACTIVITIES) { %>
+        <label class="choice">
+          <input type="checkbox" name="activities" value="<%= a.code %>" <%= (m.activities || []).includes(a.code) ? 'checked' : '' %>>
+          <span><strong><%= a.label %></strong><span><%= a.hint %></span></span>
+        </label>
+      <% } %>
+    </div>
+    <% if (errors.activities) { %><p class="small" style="color:var(--bad)"><%= errors.activities %></p><% } %>
+  </section>
+
+  <section class="form-section">
+    <h2>Proposer and seconder</h2>
+    <p class="section-hint">EXCO members who propose and second the application.</p>
+    <datalist id="exco-names"><% for (const n of excoNames) { %><option value="<%= n %>"></option><% } %></datalist>
+    <div class="form-grid">
+      <%- f('proposed_by', 'Proposed by (EXCO member)', { cls: 'col-6', list: 'exco-names' }) %>
+      <%- f('seconded_by', 'Seconded by (EXCO member)', { cls: 'col-6', list: 'exco-names' }) %>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <h2>Documents and declaration</h2>
+    <p class="section-hint">NIC/PP copy and proof of business activity (BR and/or gem licence) are required. If proof is unavailable, the application needs a 2/3 EXCO vote.</p>
+    <div class="choice-grid">
+      <% for (const d of config.DOCUMENTS) { %>
+        <label class="choice"><input type="checkbox" name="<%= d.field %>" value="1" <%= m[d.field] ? 'checked' : '' %>><span><strong><%= d.label %></strong><span>Copy received</span></span></label>
+      <% } %>
+      <label class="choice"><input type="checkbox" name="exco_vote" value="1" <%= m.exco_vote ? 'checked' : '' %>><span><strong>Accepted by 2/3 EXCO vote</strong><span>Use when document proof is unavailable</span></span></label>
+      <label class="choice"><input type="checkbox" name="terms_agreed" value="1" <%= m.terms_agreed ? 'checked' : '' %>><span><strong>Applicant signed the terms and conditions</strong><span>Compliance with CGJTA rules; promotions at CGJTA’s discretion</span></span></label>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <div class="form-grid">
+      <%- f('notes', 'Internal notes', { cls: 'col-12', type: 'textarea' }) %>
+    </div>
+  </section>
+
+  <div class="form-actions">
+    <a class="btn" href="<%= isEdit ? '/members/' + m.id : '/members' %>">Cancel</a>
+    <button class="btn btn-primary" type="submit"><%= isEdit ? 'Save changes' : 'Save application' %></button>
+  </div>
+</form>
+<%- include('../partials/bottom') %>

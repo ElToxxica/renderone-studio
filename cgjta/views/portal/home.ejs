@@ -1,0 +1,65 @@
+<%- include('top') %>
+<% const m = member; const s = config.STANDINGS[m.standing]; %>
+<div class="page-head">
+  <div>
+    <h1>Welcome, <%= m.first_name %></h1>
+    <div class="sub"><span class="mono"><%= m.cgjta_no %></span> · <span class="tier" style="--tier-color: <%= m.tier_color %>"><%= m.tier_name %></span> · <span class="badge tone-<%= s.tone %>"><%= s.label %></span></div>
+  </div>
+  <div class="actions"><a class="btn btn-primary" href="/portal/card">View my card</a></div>
+</div>
+
+<% if (m.standing === 'expired') { %>
+  <div class="callout warn">Your membership expired<%= m.valid_until ? ' on ' + h.fmtDate(m.valid_until) : '' %>. Please contact the CGJTA office to renew (annual subscription <%= h.money(m.tier_annual_fee) %>).</div>
+<% } else if (m.standing === 'due_soon') { %>
+  <div class="callout warn">Your membership is due for renewal on <%= h.fmtDate(m.valid_until) %> (annual subscription <%= h.money(m.tier_annual_fee) %>).</div>
+<% } %>
+
+<div class="grid grid-2">
+  <section class="card">
+    <div class="card-head"><h2>Membership</h2></div>
+    <div class="card-pad">
+      <dl class="details" style="grid-template-columns: 140px 1fr">
+        <dt>Member No</dt><dd class="mono"><%= m.cgjta_no %></dd>
+        <dt>Tier</dt><dd><%= m.tier_name %></dd>
+        <dt>Valid until</dt><dd><strong><%= h.fmtDate(m.valid_until) %></strong></dd>
+        <dt>Member since</dt><dd><%= h.fmtDate(m.approved_at) %></dd>
+      </dl>
+    </div>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>My details</h2><span class="hint">Contact the office to update</span></div>
+    <div class="card-pad">
+      <dl class="details" style="grid-template-columns: 140px 1fr">
+        <dt>Name on card</dt><dd><%= m.name_on_card %></dd>
+        <dt>Business</dt><dd><%= m.business_name || '—' %></dd>
+        <dt>Mobile</dt><dd><%= m.mobile %></dd>
+        <dt>E-mail</dt><dd><%= m.email || '—' %></dd>
+      </dl>
+    </div>
+  </section>
+</div>
+
+<section class="card" style="margin-top:16px">
+  <div class="card-head"><h2>Payment history</h2></div>
+  <% if (payments.length === 0) { %>
+    <div class="empty">No payments on record.</div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Receipt</th><th>Date</th><th>For</th><th>Period</th><th class="num">Amount</th></tr></thead>
+        <tbody>
+          <% for (const p of payments) { %>
+            <tr>
+              <td class="mono nowrap"><%= p.receipt_no %></td>
+              <td class="nowrap"><%= h.fmtDate(p.paid_on) %></td>
+              <td><%= (config.PAYMENT_TYPES.find((t) => t.code === p.type) || {}).label %></td>
+              <td class="small nowrap"><%= p.period_from ? h.fmtDate(p.period_from) + ' – ' + h.fmtDate(p.period_to) : '' %></td>
+              <td class="num"><%= h.money(p.amount) %></td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</section>
+<%- include('bottom') %>

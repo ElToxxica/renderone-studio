@@ -1,0 +1,25 @@
+{
+  "name": "cgjta-membership",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Membership and payments management for the Ceylon Gem and Jewellery Traders Association (CGJTA)",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/server.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch src/server.js",
+    "seed:demo": "node --disable-warning=ExperimentalWarning scripts/seed-demo.js",
+    "user:create": "node --disable-warning=ExperimentalWarning scripts/create-user.js",
+    "test": "node --disable-warning=ExperimentalWarning --test"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "ejs": "^7.0.1",
+    "express": "^5.3.0",
+    "express-session": "^1.19.0",
+    "helmet": "^8.3.0",
+    "multer": "^2.4.0"
+  }
+}

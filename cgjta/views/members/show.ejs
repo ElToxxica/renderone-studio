@@ -1,0 +1,208 @@
+<%- include('../partials/top', { navSection: member.status === 'pending' ? 'applications' : 'members' }) %>
+<% const m = member; const s = config.STANDINGS[m.standing]; const av = locals.approveValues || {}; %>
+<div class="page-head">
+  <div>
+    <div class="crumbs"><a href="/members">Members</a> / <%= m.full_name %></div>
+    <div class="profile-head">
+      <span class="avatar avatar-lg"><% if (m.photo_file) { %><img src="/members/<%= m.id %>/photo" alt="Photo of <%= m.full_name %>"><% } else { %><%= m.initials %><% } %></span>
+      <div>
+        <h1><%= m.full_name %></h1>
+        <div class="meta">
+          <span class="mono"><%= m.cgjta_no || 'No CGJTA number yet' %></span>
+          <span class="tier" style="--tier-color: <%= m.tier_color %>"><%= m.tier_name %></span>
+          <span class="badge tone-<%= s.tone %>"><%= s.label %></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="actions">
+    <a class="btn" href="/members/<%= m.id %>/edit">Edit</a>
+    <% if (m.cgjta_no) { %><a class="btn" href="/members/<%= m.id %>/card">Membership card</a><% } %>
+    <a class="btn btn-primary" href="/payments/new?member=<%= m.id %>">Record payment</a>
+  </div>
+</div>
+
+<% if (m.status === 'pending') { %>
+  <section class="card" style="margin-bottom:16px">
+    <div class="card-head"><h2>Approve application</h2><span class="hint">Applied <%= h.fmtDate(m.application_date) %></span></div>
+    <div class="card-pad">
+      <% if (approveErrors._) { %><div class="flash bad" role="alert"><%= approveErrors._ %></div><% } %>
+      <% if (!m.terms_agreed) { %>
+        <div class="callout warn">The applicant has not signed the terms and conditions yet. <a href="/members/<%= m.id %>/edit">Update the application</a>.</div>
+      <% } else if (!docsOk) { %>
+        <div class="callout warn">Supporting documents are incomplete. Either record the NIC/PP copy plus BR or gem licence, or tick “Accepted by 2/3 EXCO vote” on the <a href="/members/<%= m.id %>/edit">application</a>.</div>
+      <% } else { %>
+        <div class="callout info">Criteria met. Approving issues <strong><%= m.cgjta_no || 'the next CGJTA number' %></strong>, which becomes the member’s user ID.</div>
+      <% } %>
+      <form method="post" action="/members/<%= m.id %>/approve">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="form-grid">
+          <%- include('../partials/field', { name: 'segment_approved_by', label: 'Membership Segment authorised member', value: av.segment_approved_by, errors: approveErrors, cls: 'col-5', required: true, help: 'Checked and approved by (name with initials)' }) %>
+          <%- include('../partials/field', { name: 'exco_approved_by', label: 'CGJTA EXCO authorised member', value: av.exco_approved_by, errors: approveErrors, cls: 'col-4', required: true, help: 'Checked and approved by (name with initials)' }) %>
+          <%- include('../partials/field', { name: 'approved_at', label: 'Approval date', type: 'date', value: av.approved_at || h.today(), errors: approveErrors, cls: 'col-3', max: h.today() }) %>
+        </div>
+        <button class="btn btn-good" type="submit">Approve and issue number</button>
+      </form>
+    </div>
+    <details class="disclose">
+      <summary>Reject this application</summary>
+      <form method="post" action="/members/<%= m.id %>/status" class="card-pad" style="padding-top:0">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="action" value="reject">
+        <div class="field"><label for="reject-note">Reason</label><input type="text" id="reject-note" name="note" maxlength="500"></div>
+        <button class="btn btn-danger" type="submit" data-confirm="Reject this application?">Reject application</button>
+      </form>
+    </details>
+  </section>
+<% } else if (m.status_note && (m.status === 'suspended' || m.status === 'rejected')) { %>
+  <div class="callout warn"><strong><%= m.status === 'suspended' ? 'Suspended' : 'Rejected' %>:</strong> <%= m.status_note %></div>
+<% } %>
+
+<div class="split">
+  <div class="stack">
+    <section class="card">
+      <div class="card-head"><h2>Details</h2></div>
+      <div class="card-pad">
+        <dl class="details">
+          <dt>Name on card</dt><dd><%= m.name_on_card %></dd>
+          <dt>NIC / Passport</dt><dd class="mono"><%= m.nic_pp_no %></dd>
+          <dt>Gender</dt><dd style="text-transform:capitalize"><%= m.gender || '—' %></dd>
+          <dt>Date of birth</dt><dd><%= h.fmtDate(m.dob) %> <span class="muted">(<%= h.yearsBetween(m.dob, h.today()) %> years)</span></dd>
+          <dt>Business</dt><dd><%= m.business_name || '—' %></dd>
+          <dt>Business reg. No</dt><dd><%= m.business_reg_no || '—' %></dd>
+          <dt>NGJA licence No</dt><dd><%= m.ngja_license_no || '—' %></dd>
+          <dt>Address</dt><dd><%= [m.address_line1, m.address_line2, [m.city, m.postal_code].filter(Boolean).join(' '), m.country].filter(Boolean).join(', ') || '—' %></dd>
+          <dt>Mobile</dt><dd><a href="tel:<%= m.mobile.replace(/\s/g, '') %>"><%= m.mobile %></a></dd>
+          <dt>E-mail</dt><dd><% if (m.email) { %><a href="mailto:<%= m.email %>"><%= m.email %></a><% } else { %>—<% } %></dd>
+          <dt>Business activity</dt>
+          <dd><%= m.activities.map((a) => (config.ACTIVITIES.find((x) => x.code === a) || { label: a }).label).join(', ') || '—' %></dd>
+          <dt>Proposed by</dt><dd><%= m.proposed_by || '—' %></dd>
+          <dt>Seconded by</dt><dd><%= m.seconded_by || '—' %></dd>
+          <% if (m.notes) { %><dt>Notes</dt><dd style="white-space:pre-wrap"><%= m.notes %></dd><% } %>
+        </dl>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Payments</h2>
+        <span class="actions" style="display:flex;gap:8px">
+          <a class="btn btn-sm" href="/payments/new?member=<%= m.id %>&type=admission">Admission fee</a>
+          <a class="btn btn-sm" href="/payments/new?member=<%= m.id %>&type=subscription">Subscription</a>
+        </span>
+      </div>
+      <% if (payments.length === 0) { %>
+        <div class="empty">No payments recorded.</div>
+      <% } else { %>
+        <div class="table-wrap">
+          <table class="data">
+            <thead><tr><th>Receipt</th><th>Date</th><th>Type</th><th>Period</th><th class="num">Amount</th></tr></thead>
+            <tbody>
+              <% for (const p of payments) { %>
+                <tr class="<%= p.voided_at ? 'void' : '' %>">
+                  <td class="mono nowrap keep"><a href="/payments/<%= p.id %>"><%= p.receipt_no %></a><% if (p.voided_at) { %> <span class="badge tone-muted">Void</span><% } %></td>
+                  <td class="nowrap"><%= h.fmtDate(p.paid_on) %></td>
+                  <td><%= (config.PAYMENT_TYPES.find((t) => t.code === p.type) || {}).label %></td>
+                  <td class="nowrap small"><%= p.period_from ? h.fmtDate(p.period_from) + ' – ' + h.fmtDate(p.period_to) : '' %></td>
+                  <td class="num"><%= h.money(p.amount) %></td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </section>
+  </div>
+
+  <div class="stack">
+    <section class="card">
+      <div class="card-head"><h2>Membership</h2></div>
+      <div class="card-pad">
+        <dl class="details" style="grid-template-columns: 110px 1fr">
+          <dt>Valid until</dt><dd><strong><%= h.fmtDate(m.valid_until) %></strong></dd>
+          <dt>Annual fee</dt><dd><%= h.money(m.tier_annual_fee) %></dd>
+          <dt>Applied</dt><dd><%= h.fmtDate(m.application_date) %></dd>
+          <dt>Approved</dt><dd><%= m.approved_at ? h.fmtDate(m.approved_at) : '—' %></dd>
+          <% if (m.segment_approved_by) { %><dt>Segment</dt><dd><%= m.segment_approved_by %></dd><% } %>
+          <% if (m.exco_approved_by) { %><dt>EXCO</dt><dd><%= m.exco_approved_by %></dd><% } %>
+        </dl>
+        <% if (m.status === 'approved') { %>
+          <details class="disclose" style="margin: 12px -20px -18px; border-top: 1px solid var(--line)">
+            <summary>Suspend membership</summary>
+            <form method="post" action="/members/<%= m.id %>/status" style="padding: 0 20px 16px">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <input type="hidden" name="action" value="suspend">
+              <div class="field"><label for="suspend-note">Reason</label><input type="text" id="suspend-note" name="note" maxlength="500"></div>
+              <button class="btn btn-danger btn-sm" type="submit" data-confirm="Suspend this member?">Suspend</button>
+            </form>
+          </details>
+        <% } else if (m.status === 'suspended' || m.status === 'rejected') { %>
+          <form method="post" action="/members/<%= m.id %>/status" style="margin-top:14px">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="hidden" name="action" value="<%= m.status === 'suspended' ? 'reinstate' : 'reopen' %>">
+            <button class="btn btn-sm" type="submit"><%= m.status === 'suspended' ? 'Reinstate membership' : 'Reopen application' %></button>
+          </form>
+        <% } %>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>Documents</h2></div>
+      <div class="card-pad">
+        <ul class="checklist">
+          <% for (const d of config.DOCUMENTS) { %>
+            <li><span class="<%= m[d.field] ? 'yes' : 'no' %>" aria-hidden="true"><%= m[d.field] ? '✓' : '✕' %></span><span><%= d.label %><span class="sr-only"><%= m[d.field] ? ': received' : ': missing' %></span></span></li>
+          <% } %>
+          <li><span class="<%= m.terms_agreed ? 'yes' : 'no' %>" aria-hidden="true"><%= m.terms_agreed ? '✓' : '✕' %></span><span>Terms &amp; conditions signed</span></li>
+          <% if (m.exco_vote) { %><li><span class="yes" aria-hidden="true">✓</span><span>Accepted by 2/3 EXCO vote</span></li><% } %>
+        </ul>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>Photo</h2><span class="hint">For the membership card</span></div>
+      <form class="card-pad" method="post" action="/members/<%= m.id %>/photo" enctype="multipart/form-data">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="field"><label for="photo">Upload JPG, PNG or WebP (max 3 MB)</label><input type="file" id="photo" name="photo" accept="image/jpeg,image/png,image/webp" required></div>
+        <button class="btn btn-sm" type="submit">Upload photo</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>Member portal</h2></div>
+      <div class="card-pad">
+        <% if (!m.cgjta_no) { %>
+          <p class="small muted">Available once the application is approved. The CGJTA number is the member’s user ID.</p>
+        <% } else { %>
+          <p class="small">User ID <strong class="mono"><%= m.cgjta_no %></strong> · <%= m.portal_password_hash ? 'Access enabled' : 'No access yet' %></p>
+          <form method="post" action="/members/<%= m.id %>/portal" class="inline-form">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="hidden" name="action" value="generate">
+            <button class="btn btn-sm" type="submit" <% if (m.portal_password_hash) { %>data-confirm="This replaces the member’s current password. Continue?"<% } %>><%= m.portal_password_hash ? 'Reset password' : 'Create login' %></button>
+          </form>
+          <% if (m.portal_password_hash) { %>
+            <form method="post" action="/members/<%= m.id %>/portal" class="inline-form">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <input type="hidden" name="action" value="disable">
+              <button class="btn btn-sm btn-danger" type="submit" data-confirm="Disable portal access?">Disable</button>
+            </form>
+          <% } %>
+        <% } %>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>History</h2></div>
+      <ul class="timeline">
+        <% for (const a of activity) { %>
+          <li>
+            <%= h.activityLabel(a.action) %>
+            <% if (a.details) { %><div class="small muted"><%= a.details %></div><% } %>
+            <div class="when"><%= h.fmtDateTime(a.created_at) %><%= a.user_name ? ' · ' + a.user_name : '' %></div>
+          </li>
+        <% } %>
+      </ul>
+    </section>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

@@ -1,0 +1,94 @@
+<%- include('../partials/top') %>
+<div class="page-head"><div><h1>Settings</h1><div class="sub">Administrator only</div></div></div>
+
+<form class="card" id="tiers" method="post" action="/settings/tiers">
+  <div class="card-head"><h2>Membership tiers and fees</h2><span class="hint">Amounts in LKR</span></div>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Code</th><th>Display name</th><th>Admission fee</th><th>Annual subscription</th><th>Colour</th></tr></thead>
+      <tbody>
+        <% for (const t of tiers) { %>
+          <tr>
+            <td><span class="tier" style="--tier-color: <%= t.color %>"><%= t.code %></span></td>
+            <td><input type="text" name="name_<%= t.code %>" value="<%= t.name %>" aria-label="<%= t.code %> display name" maxlength="40"></td>
+            <td><input type="text" inputmode="decimal" name="admission_<%= t.code %>" value="<%= h.centsToInput(t.admission_fee) %>" aria-label="<%= t.code %> admission fee"></td>
+            <td><input type="text" inputmode="decimal" name="annual_<%= t.code %>" value="<%= h.centsToInput(t.annual_fee) %>" aria-label="<%= t.code %> annual fee"></td>
+            <td><input type="color" name="color_<%= t.code %>" value="<%= t.color %>" aria-label="<%= t.code %> colour"></td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+  <div class="form-actions"><button class="btn btn-primary" type="submit">Save tiers</button></div>
+</form>
+
+<form class="card" id="numbering" method="post" action="/settings/numbering">
+  <div class="card-head"><h2>Numbering and renewals</h2></div>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="card-pad">
+    <div class="form-grid">
+      <div class="field col-4"><label for="mp">Member number prefix</label><input type="text" id="mp" name="member_no_prefix" value="<%= settings.member_no_prefix %>"></div>
+      <div class="field col-4"><label for="md">Digits</label><input type="number" id="md" name="member_no_digits" min="1" max="8" value="<%= settings.member_no_digits %>"></div>
+      <div class="field col-4"><label for="mn">Next number</label><input type="number" id="mn" name="next_member_no" min="1" value="<%= settings.next_member_no %>">
+        <span class="help">Next issued: <span class="mono"><%= settings.member_no_prefix %><%= String(settings.next_member_no).padStart(Number(settings.member_no_digits), '0') %></span></span></div>
+      <div class="field col-4"><label for="rp">Receipt prefix</label><input type="text" id="rp" name="receipt_prefix" value="<%= settings.receipt_prefix %>">
+        <span class="help">e.g. <span class="mono"><%= settings.receipt_prefix %><%= h.today().slice(0, 4) %>-00001</span></span></div>
+      <div class="field col-4"><label for="rw">Renewal reminder window (days)</label><input type="number" id="rw" name="renewal_window_days" min="0" max="365" value="<%= settings.renewal_window_days %>"></div>
+    </div>
+  </div>
+  <div class="form-actions"><button class="btn btn-primary" type="submit">Save numbering</button></div>
+</form>
+
+<section class="card" id="staff">
+  <div class="card-head"><h2>Staff accounts</h2><span class="hint">People who can sign in to this admin area</span></div>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Last sign-in</th><th></th></tr></thead>
+      <tbody>
+        <% for (const u of users) { %>
+          <tr class="<%= u.active ? '' : 'void' %>">
+            <td class="keep"><strong><%= u.name %></strong><%= u.id === currentUser.id ? ' (you)' : '' %><% if (!u.active) { %> <span class="badge tone-muted">Disabled</span><% } %></td>
+            <td class="mono"><%= u.username %></td>
+            <td class="keep">
+              <form method="post" action="/settings/users/<%= u.id %>" class="inline-form" data-autosubmit>
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="action" value="role">
+                <select name="role" aria-label="Role for <%= u.username %>" style="min-width:140px">
+                  <% for (const r of config.STAFF_ROLES) { %><option value="<%= r.code %>" <%= u.role === r.code ? 'selected' : '' %>><%= r.label %></option><% } %>
+                </select>
+                <noscript><button class="btn btn-sm" type="submit">Set</button></noscript>
+              </form>
+            </td>
+            <td class="small"><%= u.last_login_at ? h.fmtDateTime(u.last_login_at) : 'Never' %></td>
+            <td class="num keep">
+              <form method="post" action="/settings/users/<%= u.id %>" class="inline-form">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="action" value="reset">
+                <button class="btn btn-sm" type="submit" data-confirm="Generate a new password for <%= u.username %>?">Reset password</button>
+              </form>
+              <% if (u.id !== currentUser.id) { %>
+                <form method="post" action="/settings/users/<%= u.id %>" class="inline-form">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="action" value="<%= u.active ? 'deactivate' : 'activate' %>">
+                  <button class="btn btn-sm <%= u.active ? 'btn-danger' : '' %>" type="submit"><%= u.active ? 'Disable' : 'Enable' %></button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+  <form method="post" action="/settings/users#staff" class="card-pad" style="border-top:1px solid var(--line)">
+    <h3 style="margin-bottom:12px">Add staff account</h3>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="form-grid">
+      <%- include('../partials/field', { name: 'name', label: 'Full name', value: userValues.name, errors: userErrors, cls: 'col-4', required: true }) %>
+      <%- include('../partials/field', { name: 'username', label: 'Username', value: userValues.username, errors: userErrors, cls: 'col-3', required: true, autocomplete: 'off' }) %>
+      <%- include('../partials/field', { name: 'password', label: 'Temporary password', type: 'password', value: '', errors: userErrors, cls: 'col-3', required: true, autocomplete: 'new-password' }) %>
+      <div class="field col-2"><label for="f_role">Role</label>
+        <select id="f_role" name="role"><% for (const r of config.STAFF_ROLES) { %><option value="<%= r.code %>" <%= userValues.role === r.code ? 'selected' : '' %>><%= r.label %></option><% } %></select>
+      </div>
+    </div>
+    <button class="btn btn-primary" type="submit">Add account</button>
+  </form>
+</section>
+<%- include('../partials/bottom') %>

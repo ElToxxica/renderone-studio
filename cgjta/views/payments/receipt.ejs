@@ -1,0 +1,52 @@
+<%- include('../partials/top') %>
+<% const p = payment; %>
+<div class="page-head no-print">
+  <div>
+    <div class="crumbs"><a href="/payments">Payments</a> / <%= p.receipt_no %></div>
+    <h1>Receipt <%= p.receipt_no %></h1>
+  </div>
+  <div class="actions">
+    <a class="btn" href="/members/<%= p.member_id %>">Member profile</a>
+    <button class="btn btn-primary" type="button" data-print>Print receipt</button>
+  </div>
+</div>
+
+<article class="card receipt">
+  <header class="receipt-head">
+    <div class="brand"><%- include('../partials/brand') %></div>
+    <div style="text-align:right">
+      <div class="small muted">Official receipt</div>
+      <div class="mono" style="font-size:18px;font-weight:700"><%= p.receipt_no %></div>
+      <div class="small"><%= h.fmtDate(p.paid_on) %></div>
+    </div>
+  </header>
+  <% if (p.voided_at) { %>
+    <div class="void-stamp">VOID</div>
+    <p class="small"><strong>Voided</strong> <%= h.fmtDateTime(p.voided_at) %><%= p.voided_by_name ? ' by ' + p.voided_by_name : '' %> — <%= p.void_reason %></p>
+  <% } %>
+  <div class="small muted">Received from</div>
+  <div style="font-size:18px;font-weight:600"><%= p.member_name %></div>
+  <div class="small"><%= p.cgjta_no ? 'Member No ' + p.cgjta_no : 'Applicant' %><%= p.business_name ? ' · ' + p.business_name : '' %></div>
+  <div class="amount"><%= h.money(p.amount) %></div>
+  <dl class="details">
+    <dt>Being payment of</dt><dd><%= (config.PAYMENT_TYPES.find((t) => t.code === p.type) || {}).label %><%= member ? ' — ' + member.tier_name + ' tier' : '' %></dd>
+    <% if (p.period_from) { %><dt>Membership period</dt><dd><%= h.fmtDate(p.period_from) %> – <%= h.fmtDate(p.period_to) %></dd><% } %>
+    <dt>Paid by</dt><dd><%= (config.PAYMENT_METHODS.find((t) => t.code === p.method) || {}).label %><%= p.reference ? ' · ' + p.reference : '' %></dd>
+    <% if (p.notes) { %><dt>Notes</dt><dd><%= p.notes %></dd><% } %>
+    <dt>Recorded by</dt><dd><%= p.recorded_by_name || '—' %> · <%= h.fmtDateTime(p.created_at) %></dd>
+  </dl>
+  <div class="receipt-sign"><div>Received by</div><div>Treasurer / Authorised signatory</div></div>
+</article>
+
+<% if (!p.voided_at && currentUser.role === 'admin') { %>
+  <details class="card disclose no-print" style="max-width:720px;margin-top:16px">
+    <summary>Void this payment</summary>
+    <form method="post" action="/payments/<%= p.id %>/void" class="card-pad" style="padding-top:0">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <p class="small muted">Voided payments stay on record for audit but stop counting toward totals and membership validity.</p>
+      <div class="field"><label for="reason">Reason <span class="req" aria-hidden="true">*</span></label><input type="text" id="reason" name="reason" required maxlength="300"></div>
+      <button class="btn btn-danger" type="submit" data-confirm="Void receipt <%= p.receipt_no %>?">Void payment</button>
+    </form>
+  </details>
+<% } %>
+<%- include('../partials/bottom') %>

@@ -1,0 +1,70 @@
+<%- include('../partials/top') %>
+<% const exportFilters = { from: filters.from, to: filters.to, type: filters.type, method: filters.method, q: filters.q, voided: filters.includeVoided ? '1' : '' }; %>
+<div class="page-head">
+  <div>
+    <h1>Payments</h1>
+    <div class="sub"><%= result.total %> payment<%= result.total === 1 ? '' : 's' %> · <strong><%= h.money(result.sum) %></strong> collected<%= filters.from || filters.to ? ' in this range' : '' %></div>
+  </div>
+  <div class="actions">
+    <a class="btn" href="/payments/export.csv<%= h.qs(exportFilters) %>">Export CSV</a>
+    <a class="btn btn-primary" href="/payments/new">Record payment</a>
+  </div>
+</div>
+
+<section class="card">
+  <form class="filters" method="get" action="/payments">
+    <div class="field grow">
+      <label for="q">Search</label>
+      <input type="search" id="q" name="q" value="<%= filters.q %>" placeholder="Receipt, member, CGJTA No, reference…">
+    </div>
+    <div class="field"><label for="from">From</label><input type="date" id="from" name="from" value="<%= filters.from %>"></div>
+    <div class="field"><label for="to">To</label><input type="date" id="to" name="to" value="<%= filters.to %>"></div>
+    <div class="field">
+      <label for="type">Type</label>
+      <select id="type" name="type"><option value="">All types</option>
+        <% for (const t of config.PAYMENT_TYPES) { %><option value="<%= t.code %>" <%= filters.type === t.code ? 'selected' : '' %>><%= t.label %></option><% } %>
+      </select>
+    </div>
+    <div class="field">
+      <label for="method">Method</label>
+      <select id="method" name="method"><option value="">All methods</option>
+        <% for (const t of config.PAYMENT_METHODS) { %><option value="<%= t.code %>" <%= filters.method === t.code ? 'selected' : '' %>><%= t.label %></option><% } %>
+      </select>
+    </div>
+    <label class="radio-row small" style="min-height:38px"><input type="checkbox" name="voided" value="1" <%= filters.includeVoided ? 'checked' : '' %>> Show void</label>
+    <button class="btn" type="submit">Filter</button>
+    <% if (Object.values(exportFilters).some(Boolean)) { %><a class="btn" href="/payments">Clear</a><% } %>
+  </form>
+
+  <% if (result.rows.length === 0) { %>
+    <div class="empty">No payments found.</div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Receipt</th><th>Date</th><th>Member</th><th>Type</th><th>Method</th><th class="num">Amount</th></tr></thead>
+        <tbody>
+          <% for (const p of result.rows) { %>
+            <tr class="<%= p.voided_at ? 'void' : '' %>">
+              <td class="mono nowrap keep"><a href="/payments/<%= p.id %>"><%= p.receipt_no %></a><% if (p.voided_at) { %> <span class="badge tone-muted">Void</span><% } %></td>
+              <td class="nowrap"><%= h.fmtDate(p.paid_on) %></td>
+              <td><a href="/members/<%= p.member_id %>"><%= p.member_name %></a><br><span class="small muted mono"><%= p.cgjta_no || 'Pending' %></span></td>
+              <td><%= (config.PAYMENT_TYPES.find((t) => t.code === p.type) || {}).label %></td>
+              <td><%= (config.PAYMENT_METHODS.find((t) => t.code === p.method) || {}).label %><% if (p.reference) { %><br><span class="small muted"><%= p.reference %></span><% } %></td>
+              <td class="num"><%= h.money(p.amount) %></td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+    <% if (result.pages > 1) { %>
+      <div class="pager">
+        <span>Page <%= result.page %> of <%= result.pages %></span>
+        <span class="links">
+          <% if (result.page > 1) { %><a class="btn btn-sm" href="/payments<%= h.qs({ ...exportFilters, page: result.page - 1 }) %>">← Previous</a><% } %>
+          <% if (result.page < result.pages) { %><a class="btn btn-sm" href="/payments<%= h.qs({ ...exportFilters, page: result.page + 1 }) %>">Next →</a><% } %>
+        </span>
+      </div>
+    <% } %>
+  <% } %>
+</section>
+<%- include('../partials/bottom') %>

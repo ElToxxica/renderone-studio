@@ -1,0 +1,18 @@
+<% const m = member; const isPortal = Boolean(locals.portal); %>
+<% if (isPortal) { %><%- include('../portal/top') %><% } else { %><%- include('../partials/top') %><% } %>
+<div class="page-head">
+  <div>
+    <% if (!isPortal) { %><div class="crumbs"><a href="/members">Members</a> / <a href="/members/<%= m.id %>"><%= m.full_name %></a></div><% } %>
+    <h1>Membership card</h1>
+    <% if (!isPortal) { %><div class="sub">Card artwork lives in <code>public/artwork/</code> — replace the placeholder files to update every card.</div><% } %>
+  </div>
+  <div class="actions">
+    <% if (!isPortal) { %><a class="btn" href="/members/<%= m.id %>">Back to profile</a><% } %>
+    <button class="btn btn-primary" type="button" data-print>Print</button>
+  </div>
+</div>
+<% if (m.standing !== 'active' && m.standing !== 'due_soon') { %>
+  <div class="callout warn no-print">Standing: <strong><%= config.STANDINGS[m.standing].label %></strong>. Check the membership is paid up before issuing a card.</div>
+<% } %>
+<%- include('../partials/mcard', { m, photoUrl }) %>
+<% if (isPortal) { %><%- include('../portal/bottom') %><% } else { %><%- include('../partials/bottom') %><% } %>

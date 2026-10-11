@@ -1,0 +1,23 @@
+<%- include('partials/head') %>
+<body>
+<div class="auth-page">
+  <form class="card auth-card" method="post" action="/login">
+    <div class="brand"><%- include('partials/brand') %></div>
+    <h1>Staff sign in</h1>
+    <p class="muted small"><%= settings.org_name %></p>
+    <% if (error) { %><div class="flash bad" role="alert"><%= error %></div><% } %>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="field">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" value="<%= username %>" autocomplete="username" autocapitalize="none" required autofocus>
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" autocomplete="current-password" required>
+    </div>
+    <button class="btn btn-primary" type="submit">Sign in</button>
+    <p class="auth-switch">Are you a member? <a href="/portal/login">Member sign in</a></p>
+  </form>
+</div>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<%- include('../partials/top', { navSection: filters.standing === 'pending' ? 'applications' : 'members' }) %>
+<div class="page-head">
+  <div>
+    <h1><%= filters.standing === 'pending' ? 'Pending applications' : 'Members' %></h1>
+    <div class="sub"><%= result.total %> record<%= result.total === 1 ? '' : 's' %></div>
+  </div>
+  <div class="actions">
+    <a class="btn" href="/members/export.csv<%= h.qs(filters) %>">Export CSV</a>
+    <a class="btn btn-primary" href="/members/new">New application</a>
+  </div>
+</div>
+
+<section class="card">
+  <div class="chips" aria-label="Filter by standing">
+    <a class="chip <%= !filters.standing ? 'on' : '' %>" href="/members<%= h.qs({ ...filters, standing: '' }) %>">All</a>
+    <% for (const [code, s] of Object.entries(config.STANDINGS)) { %>
+      <a class="chip <%= filters.standing === code ? 'on' : '' %>" href="/members<%= h.qs({ ...filters, standing: code }) %>"><%= s.label %></a>
+    <% } %>
+  </div>
+  <form class="filters" method="get" action="/members">
+    <% if (filters.standing) { %><input type="hidden" name="standing" value="<%= filters.standing %>"><% } %>
+    <div class="field grow">
+      <label for="q">Search</label>
+      <input type="search" id="q" name="q" value="<%= filters.q %>" placeholder="Name, CGJTA No, NIC, business, phone…">
+    </div>
+    <div class="field">
+      <label for="tier">Tier</label>
+      <select id="tier" name="tier">
+        <option value="">All tiers</option>
+        <% for (const t of tiers) { %><option value="<%= t.code %>" <%= filters.tier === t.code ? 'selected' : '' %>><%= t.name %></option><% } %>
+      </select>
+    </div>
+    <button class="btn" type="submit">Filter</button>
+    <% if (filters.q || filters.tier) { %><a class="btn" href="/members<%= h.qs({ standing: filters.standing }) %>">Clear</a><% } %>
+  </form>
+
+  <% if (result.rows.length === 0) { %>
+    <div class="empty">No members match. <a href="/members/new">Add a new application</a>.</div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr><th>Member</th><th>CGJTA No</th><th>Tier</th><th>Standing</th><th>Valid until</th><th>Mobile</th></tr>
+        </thead>
+        <tbody>
+          <% for (const m of result.rows) { const s = config.STANDINGS[m.standing]; %>
+            <tr>
+              <td>
+                <a class="who-cell" href="/members/<%= m.id %>">
+                  <span class="avatar"><% if (m.photo_file) { %><img src="/members/<%= m.id %>/photo" alt="" loading="lazy"><% } else { %><%= m.initials %><% } %></span>
+                  <span><span class="name"><%= m.full_name %></span><br><span class="small muted"><%= m.business_name || '—' %></span></span>
+                </a>
+              </td>
+              <td class="mono nowrap"><%= m.cgjta_no || '—' %></td>
+              <td><span class="tier" style="--tier-color: <%= m.tier_color %>"><%= m.tier_name %></span></td>
+              <td><span class="badge tone-<%= s.tone %>"><%= s.label %></span></td>
+              <td class="nowrap"><%= h.fmtDate(m.valid_until) %></td>
+              <td class="nowrap"><%= m.mobile %></td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+    <% if (result.pages > 1) { %>
+      <div class="pager">
+        <span>Page <%= result.page %> of <%= result.pages %></span>
+        <span class="links">
+          <% if (result.page > 1) { %><a class="btn btn-sm" href="/members<%= h.qs({ ...filters, page: result.page - 1 }) %>">← Previous</a><% } %>
+          <% if (result.page < result.pages) { %><a class="btn btn-sm" href="/members<%= h.qs({ ...filters, page: result.page + 1 }) %>">Next →</a><% } %>
+        </span>
+      </div>
+    <% } %>
+  <% } %>
+</section>
+<%- include('../partials/bottom') %>

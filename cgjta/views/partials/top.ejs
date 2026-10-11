@@ -1,0 +1,40 @@
+<%- include('head') %>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <a class="brand" href="/"><%- include('brand') %></a>
+    <%
+      const nav = [
+        { href: '/', label: 'Dashboard', on: path === '/' },
+        { href: '/members', label: 'Members', on: path.startsWith('/members') && locals.navSection !== 'applications' },
+        { href: '/members?standing=pending', label: 'Applications', on: locals.navSection === 'applications', count: locals.pendingCount },
+        { href: '/payments', label: 'Payments', on: path.startsWith('/payments') && path !== '/payments/new' },
+        { href: '/payments/new', label: 'Record payment', on: path === '/payments/new' },
+      ];
+    %>
+    <nav class="nav" aria-label="Main">
+      <% for (const item of nav) { %>
+        <a href="<%= item.href %>" class="<%= item.on ? 'active' : '' %>"<%- item.on ? ' aria-current="page"' : '' %>>
+          <span><%= item.label %></span>
+          <% if (item.count) { %><span class="count"><%= item.count %></span><% } %>
+        </a>
+      <% } %>
+      <% if (currentUser.role === 'admin') { %>
+        <div class="nav-section">Admin</div>
+        <a href="/settings" class="<%= path.startsWith('/settings') ? 'active' : '' %>"><span>Settings</span></a>
+      <% } %>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="who"><%= currentUser.name %></div>
+      <div class="role"><%= currentUser.role %></div>
+      <div class="links">
+        <a href="/account/password">Change password</a>
+        <form method="post" action="/logout" class="inline-form">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="linklike" type="submit">Sign out</button>
+        </form>
+      </div>
+    </div>
+  </aside>
+  <main class="main" id="main">
+    <%- include('flash') %>
